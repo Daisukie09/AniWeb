@@ -1,8 +1,7 @@
 import React from "react";
-import { DiscordLogoIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import Link from "next/link";
-import { Sparkles, Heart, ExternalLink } from "lucide-react";
+import { Sparkles, Heart, ExternalLink, Facebook } from "lucide-react";
 
 type FooterLink = {
   name: string;
@@ -31,8 +30,7 @@ const Footer = () => {
     {
       title: "Community",
       links: [
-        { name: "Discord", href: "https://discord.gg/6yAJ3XDHTt", external: true },
-        { name: "GitHub", href: "https://github.com/Dovakiin0/Kitsune", external: true },
+        { name: "Facebook", href: "https://web.facebook.com/vincent.09123455", external: true },
       ]
     },
     {
@@ -74,21 +72,13 @@ const Footer = () => {
               Watch thousands of anime series and movies for free, anytime, anywhere.
             </p>
             <div className="flex items-center gap-3">
-              <a 
-                href="https://github.com/Dovakiin0/Kitsune" 
+              <a
+                href="https://web.facebook.com/vincent.09123455"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 group"
               >
-                <GitHubLogoIcon className="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors" />
-              </a>
-              <a 
-                href="https://discord.gg/6yAJ3XDHTt" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 group"
-              >
-                <DiscordLogoIcon className="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors" />
+                <Facebook className="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors" />
               </a>
             </div>
           </div>
