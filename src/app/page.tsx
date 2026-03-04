@@ -38,21 +38,11 @@ export default function Home() {
             anime: data?.mostFavoriteAnimes as IAnime[],
           },
           {
-            title: "Most Popular Anime",
-            anime: data?.mostPopularAnimes as IAnime[],
-          },
-          {
             title: "Latest Completed Anime",
             anime: data?.latestCompletedAnimes as LatestCompletedAnime[],
           },
         ]}
       />
-      <AnimeSections
-        title={"Trending Anime"}
-        trendingAnime={data?.trendingAnimes as IAnime[]}
-        loading={isLoading}
-      />
-
       <AnimeSchedule />
 
       <AnimeSections
