@@ -122,7 +122,7 @@ function LoginPopoverButton() {
       // Handle PocketBase specific error responses
       if (e?.response?.data) {
         const errorData = e.response.data;
-        let errorMessages: string[] = [];
+        const errorMessages: string[] = [];
         
         for (const key in errorData) {
           if (errorData[key]?.message) {
