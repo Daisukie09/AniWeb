@@ -54,7 +54,23 @@ function LoginPopoverButton() {
       }
     } catch (e: any) {
       console.error("Login error:", e);
-      const errorMessage = e?.message || "Invalid username or password";
+      
+      // Handle specific error types
+      let errorMessage = "Invalid username or password";
+      
+      if (e?.message?.includes("autocancelled") || e?.message?.includes("auto cancelled")) {
+        errorMessage = "Request was cancelled. Please try again.";
+      } else if (e?.response?.data) {
+        const errorData = e.response.data;
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } else if (e?.message) {
+        errorMessage = e.message;
+      }
+      
       toast.error(errorMessage, {
         style: { background: "red" },
       });
@@ -164,14 +180,29 @@ function LoginPopoverButton() {
 
   const loginWithGoogle = async () => {
     try {
+      // Use authWithOAuth2 with proper URL callback for popup-based OAuth flow
       const res = await pb.collection("users").authWithOAuth2({
         provider: "google",
+        createData: {
+          // Optional: Set default values for new users
+        },
       });
 
       if (pb.authStore.isValid && pb.authStore.record) {
-        await pb.collection("users").update(pb.authStore.record?.id!, {
-          username: res.meta?.username || res.meta?.name,
-        });
+        // Update username if it's a new user (using metadata from OAuth provider)
+        const metaUsername = res.meta?.username || res.meta?.name;
+        if (metaUsername && pb.authStore.record.username !== metaUsername) {
+          try {
+            await pb.collection("users").update(pb.authStore.record.id, {
+              username: metaUsername,
+            });
+            // Update local auth store with new username
+            pb.authStore.record.username = metaUsername;
+          } catch (updateError) {
+            console.warn("Failed to update username:", updateError);
+            // Continue even if username update fails
+          }
+        }
 
         toast.success("Login successful", { style: { background: "green" } });
         auth.setAuth({
@@ -186,22 +217,55 @@ function LoginPopoverButton() {
       }
     } catch (e: any) {
       console.error("Google login error:", e);
-      toast.error("Google login failed. Please try again.", {
-        style: { background: "red" },
-      });
+      
+      // Handle specific error types
+      if (e?.message?.includes("autocancelled") || e?.message?.includes("auto cancelled")) {
+        toast.error("Request was cancelled. Please try again.", {
+          style: { background: "red" },
+        });
+      } else if (e?.message?.includes("popup") || e?.message?.includes("blocked")) {
+        toast.error("Popup was blocked. Please allow popups for this site.", {
+          style: { background: "red" },
+        });
+      } else if (e?.response?.data) {
+        const errorData = e.response.data;
+        const errorMessage = errorData.message || errorData.error || "Google login failed";
+        toast.error(errorMessage, {
+          style: { background: "red" },
+        });
+      } else {
+        toast.error("Google login failed. Please try again.", {
+          style: { background: "red" },
+        });
+      }
     }
   };
 
   const loginWithFacebook = async () => {
     try {
+      // Use authWithOAuth2 with proper URL callback for popup-based OAuth flow
       const res = await pb.collection("users").authWithOAuth2({
         provider: "facebook",
+        createData: {
+          // Optional: Set default values for new users
+        },
       });
 
       if (pb.authStore.isValid && pb.authStore.record) {
-        await pb.collection("users").update(pb.authStore.record?.id!, {
-          username: res.meta?.username || res.meta?.name,
-        });
+        // Update username if it's a new user (using metadata from OAuth provider)
+        const metaUsername = res.meta?.username || res.meta?.name;
+        if (metaUsername && pb.authStore.record.username !== metaUsername) {
+          try {
+            await pb.collection("users").update(pb.authStore.record.id, {
+              username: metaUsername,
+            });
+            // Update local auth store with new username
+            pb.authStore.record.username = metaUsername;
+          } catch (updateError) {
+            console.warn("Failed to update username:", updateError);
+            // Continue even if username update fails
+          }
+        }
 
         toast.success("Login successful", { style: { background: "green" } });
         auth.setAuth({
@@ -216,9 +280,27 @@ function LoginPopoverButton() {
       }
     } catch (e: any) {
       console.error("Facebook login error:", e);
-      toast.error("Facebook login failed. Please try again.", {
-        style: { background: "red" },
-      });
+      
+      // Handle specific error types
+      if (e?.message?.includes("autocancelled") || e?.message?.includes("auto cancelled")) {
+        toast.error("Request was cancelled. Please try again.", {
+          style: { background: "red" },
+        });
+      } else if (e?.message?.includes("popup") || e?.message?.includes("blocked")) {
+        toast.error("Popup was blocked. Please allow popups for this site.", {
+          style: { background: "red" },
+        });
+      } else if (e?.response?.data) {
+        const errorData = e.response.data;
+        const errorMessage = errorData.message || errorData.error || "Facebook login failed";
+        toast.error(errorMessage, {
+          style: { background: "red" },
+        });
+      } else {
+        toast.error("Facebook login failed. Please try again.", {
+          style: { background: "red" },
+        });
+      }
     }
   };
 
