@@ -3,7 +3,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import Button from "./common/custom-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
-import DiscordIcon from "@/icons/discord";
+import GoogleIcon from "@/icons/google";
+import FacebookIcon from "@/icons/facebook";
 import { pb } from "@/lib/pocketbase";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
@@ -51,15 +52,17 @@ function LoginPopoverButton() {
           autoSkip: pb.authStore.record.autoSkip,
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Login error:", e);
-      toast.error("Invalid username or password", {
+      const errorMessage = e?.message || "Invalid username or password";
+      toast.error(errorMessage, {
         style: { background: "red" },
       });
     }
   };
 
   const signupWithEmail = async () => {
+    // Validate all fields are filled
     if (
       formData.username === "" ||
       formData.password === "" ||
@@ -72,28 +75,76 @@ function LoginPopoverButton() {
       return;
     }
 
+    // Validate password and confirm password match
+    if (formData.password !== formData.confirm_password) {
+      toast.error("Passwords do not match", {
+        style: { background: "red" },
+      });
+      return;
+    }
+
+    // Validate password length (PocketBase default minimum is 8 characters)
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long", {
+        style: { background: "red" },
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address", {
+        style: { background: "red" },
+      });
+      return;
+    }
+
     try {
       const user = await pb.collection("users").create({
         username: formData.username,
         email: formData.email,
         password: formData.password,
         passwordConfirm: formData.confirm_password,
+        emailVisibility: true,
       });
 
       if (user) {
-        toast.success("Account created successfully. Please login.", {
+        toast.success("Account created successfully! Please login.", {
           style: { background: "green" },
         });
         clearForm();
         setTabValue("login");
       }
     } catch (e: any) {
-      if (e.response?.data) {
-        for (const key in e.response?.data) {
-          toast.error(`${key}: ${e.response.data[key].message}`, {
+      console.error("Signup error:", e);
+      
+      // Handle PocketBase specific error responses
+      if (e?.response?.data) {
+        const errorData = e.response.data;
+        let errorMessages: string[] = [];
+        
+        for (const key in errorData) {
+          if (errorData[key]?.message) {
+            errorMessages.push(`${key}: ${errorData[key].message}`);
+          }
+        }
+        
+        if (errorMessages.length > 0) {
+          errorMessages.forEach((msg) => {
+            toast.error(msg, {
+              style: { background: "red" },
+            });
+          });
+        } else {
+          toast.error("Signup failed. Please check your information and try again.", {
             style: { background: "red" },
           });
         }
+      } else if (e?.message) {
+        toast.error(e.message, {
+          style: { background: "red" },
+        });
       } else {
         toast.error("Signup failed. Please try again.", {
           style: { background: "red" },
@@ -111,25 +162,62 @@ function LoginPopoverButton() {
     });
   };
 
-  const loginWithDiscord = async () => {
-    const res = await pb.collection("users").authWithOAuth2({
-      provider: "discord",
-    });
-
-    if (pb.authStore.isValid && pb.authStore.record) {
-      await pb.collection("users").update(pb.authStore.record?.id!, {
-        username: res.meta?.username,
+  const loginWithGoogle = async () => {
+    try {
+      const res = await pb.collection("users").authWithOAuth2({
+        provider: "google",
       });
 
-      toast.success("Login successful", { style: { background: "green" } });
-      auth.setAuth({
-        id: pb.authStore.record.id,
-        email: pb.authStore.record.email,
-        username: pb.authStore.record.username,
-        avatar: pb.authStore.record.avatar,
-        collectionId: pb.authStore.record.collectionId,
-        collectionName: pb.authStore.record.collectionName,
-        autoSkip: pb.authStore.record.autoSkip,
+      if (pb.authStore.isValid && pb.authStore.record) {
+        await pb.collection("users").update(pb.authStore.record?.id!, {
+          username: res.meta?.username || res.meta?.name,
+        });
+
+        toast.success("Login successful", { style: { background: "green" } });
+        auth.setAuth({
+          id: pb.authStore.record.id,
+          email: pb.authStore.record.email,
+          username: pb.authStore.record.username,
+          avatar: pb.authStore.record.avatar,
+          collectionId: pb.authStore.record.collectionId,
+          collectionName: pb.authStore.record.collectionName,
+          autoSkip: pb.authStore.record.autoSkip,
+        });
+      }
+    } catch (e: any) {
+      console.error("Google login error:", e);
+      toast.error("Google login failed. Please try again.", {
+        style: { background: "red" },
+      });
+    }
+  };
+
+  const loginWithFacebook = async () => {
+    try {
+      const res = await pb.collection("users").authWithOAuth2({
+        provider: "facebook",
+      });
+
+      if (pb.authStore.isValid && pb.authStore.record) {
+        await pb.collection("users").update(pb.authStore.record?.id!, {
+          username: res.meta?.username || res.meta?.name,
+        });
+
+        toast.success("Login successful", { style: { background: "green" } });
+        auth.setAuth({
+          id: pb.authStore.record.id,
+          email: pb.authStore.record.email,
+          username: pb.authStore.record.username,
+          avatar: pb.authStore.record.avatar,
+          collectionId: pb.authStore.record.collectionId,
+          collectionName: pb.authStore.record.collectionName,
+          autoSkip: pb.authStore.record.autoSkip,
+        });
+      }
+    } catch (e: any) {
+      console.error("Facebook login error:", e);
+      toast.error("Facebook login failed. Please try again.", {
+        style: { background: "red" },
       });
     }
   };
@@ -195,15 +283,29 @@ function LoginPopoverButton() {
             >
               Login
             </Button>
-            <hr className="text-white text-xs text-center" />
+            <div className="relative my-2">
+              <hr className="border-gray-600" />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/50 px-2 text-xs text-gray-400">
+                or
+              </span>
+            </div>
             <Button
               variant="default"
-              className="bg-blue-600 hover:bg-blue-800 text-white w-full text-xs"
+              className="bg-white hover:bg-gray-200 text-gray-800 w-full text-xs"
               size="sm"
-              onClick={loginWithDiscord}
+              onClick={loginWithGoogle}
             >
-              <DiscordIcon className="mr-2" />
-              Login with Discord
+              <GoogleIcon className="mr-2" />
+              Login with Google
+            </Button>
+            <Button
+              variant="default"
+              className="bg-[#1877F2] hover:bg-[#166fe5] text-white w-full text-xs"
+              size="sm"
+              onClick={loginWithFacebook}
+            >
+              <FacebookIcon className="mr-2" />
+              Login with Facebook
             </Button>
           </TabsContent>
           <TabsContent value="signup" className="flex flex-col gap-2">
@@ -215,6 +317,7 @@ function LoginPopoverButton() {
                   setFormData({ ...formData, username: e.target.value })
                 }
                 type="text"
+                value={formData.username}
                 placeholder="Enter your username"
               />
             </div>
@@ -226,6 +329,7 @@ function LoginPopoverButton() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 type="email"
+                value={formData.email}
                 placeholder="Enter your email"
               />
             </div>
@@ -237,7 +341,8 @@ function LoginPopoverButton() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 type="password"
-                placeholder="Enter your password"
+                value={formData.password}
+                placeholder="Min 8 characters"
               />
             </div>
             <div>
@@ -248,6 +353,7 @@ function LoginPopoverButton() {
                   setFormData({ ...formData, confirm_password: e.target.value })
                 }
                 type="password"
+                value={formData.confirm_password}
                 placeholder="Enter your password again"
               />
             </div>
@@ -260,15 +366,29 @@ function LoginPopoverButton() {
             >
               Signup
             </Button>
-            <hr className="text-white text-xs text-center" />
+            <div className="relative my-2">
+              <hr className="border-gray-600" />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/50 px-2 text-xs text-gray-400">
+                or
+              </span>
+            </div>
             <Button
               variant="default"
-              className="bg-blue-600 hover:bg-blue-800 text-white w-full text-xs"
+              className="bg-white hover:bg-gray-200 text-gray-800 w-full text-xs"
               size="sm"
-              onClick={loginWithDiscord}
+              onClick={loginWithGoogle}
             >
-              <DiscordIcon className="mr-2" />
-              Signup with Discord
+              <GoogleIcon className="mr-2" />
+              Signup with Google
+            </Button>
+            <Button
+              variant="default"
+              className="bg-[#1877F2] hover:bg-[#166fe5] text-white w-full text-xs"
+              size="sm"
+              onClick={loginWithFacebook}
+            >
+              <FacebookIcon className="mr-2" />
+              Signup with Facebook
             </Button>
           </TabsContent>
         </Tabs>
