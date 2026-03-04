@@ -4,10 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { Sparkles, Heart, ExternalLink } from "lucide-react";
 
+type FooterLink = {
+  name: string;
+  href: string;
+  external?: boolean;
+};
+
+type FooterSection = {
+  title: string;
+  links: FooterLink[];
+};
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   
-  const footerLinks = [
+  const footerLinks: FooterSection[] = [
     {
       title: "Browse",
       links: [
@@ -92,14 +103,14 @@ const Footer = () => {
               <ul className="space-y-2.5">
                 {section.links.map((link, linkIdx) => (
                   <li key={linkIdx}>
-                    <Link 
+                    <Link
                       href={link.href}
-                      target={link.external ? "_blank" : undefined}
-                      rel={link.external ? "noopener noreferrer" : undefined}
+                      target={"external" in link && link.external ? "_blank" : undefined}
+                      rel={"external" in link && link.external ? "noopener noreferrer" : undefined}
                       className="text-sm text-muted-foreground hover:text-white transition-colors duration-300 flex items-center gap-1 group"
                     >
                       {link.name}
-                      {link.external && (
+                      {"external" in link && link.external && (
                         <ExternalLink className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                       )}
                     </Link>
