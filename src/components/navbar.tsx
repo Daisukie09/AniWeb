@@ -26,14 +26,6 @@ const menuItems: Array<{ title: string; href?: string }> = [
     title: "Home",
     href: ROUTES.HOME,
   },
-  {
-    title: "Popular",
-    href: "/search?sort=popular",
-  },
-  {
-    title: "Trending",
-    href: "/search?sort=trending",
-  },
 ];
 
 const NavBar = () => {
